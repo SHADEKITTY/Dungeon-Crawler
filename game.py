@@ -1,4 +1,5 @@
 import pygame
+import random
 from Player import *
 from wall import *
 
@@ -48,7 +49,7 @@ class Game:
         self.genL()
 
 
-    def genL(self):
+    def genL(self, num_internal_wall = 10):
         for col in range(self.tile_cols):
             self.map[col][0] = Wall(col, 0, self.tile_width, self.tile_height)
             self.map[col][self.tile_cols - 1] = Wall(col, self.tile_cols - 1, self.tile_width, self.tile_height)
@@ -56,6 +57,18 @@ class Game:
         for row in range(self.tile_rows):
             self.map[0][row]= Wall(0, row, self.tile_width, self.tile_height)
             self.map[self.tile_rows - 1][row]= Wall(self.tile_cols - 1, row, self.tile_width, self.tile_height)
+        
+        for _ in range(num_internal_wall):
+            x = random.randint(1, self.tile_cols - 2)
+            y = random.randint(1, self.tile_rows - 2)
+
+            while self.map[x][y] != 0:
+                x = random.randint(1, self.tile_cols - 2)
+                y = random.randint(1, self.tile_rows - 2)
+
+            self.map[x][y] = Wall(x, y, self.tile_width, self.tile_height)
+
+        
             
 
     def _setup_pygame(self):
@@ -68,8 +81,7 @@ class Game:
             if event == pygame.QUIT:
                 self.running = False
             if self.player:
-                moved = self. player.handle_input(event, self.tile_cols, self.tile_rows)
-
+                moved = self.player.handle_input(event, self.map, self.tile_cols, self.tile_rows)
     def _draw(self):
         self.display.fill(WHITE)
 
