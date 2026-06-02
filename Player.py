@@ -1,8 +1,14 @@
 import pygame
 from go import *
 from wall import *
+from spritesheet import *
+import os
 
 GREEN = (0, 255, 0)
+
+M_F = 10
+
+ASSET_DIR = os.path.join(os.path.dirname(__file__), "assets", "1 Pink_Monster")
 
 class Player(GameObject):
 
@@ -11,10 +17,32 @@ class Player(GameObject):
         y = gridy * tile_height
         super().__init__(gridx, gridy, x, y, tile_width, tile_height, color)
 
+
+        self.m_s = tile_width / M_F
+
+
+        scale = (tile_width, tile_height)
+        self.animations = {
+            "idle": Animation(load_spritesheet(os.path.join(ASSET_DIR, "Pink_Monster_Idle_4.png"), 32, 32, scale), speed=max(1, M_F // 8)),
+            "walk": Animation(load_spritesheet(os.path.join(ASSET_DIR, "Pink_Monster_Walk_6.png"), 32, 32, scale), speed=max(1, M_F // 8))
+        }
+        self.current_animation = "idle"
+        self.direction = "right"
+        self.is_moving = False
+
     def draw(self, surface):
-        pygame.draw.rect(surface, self.color, (self.x, self.y, self.tile_width, self.tile_height))
+        
+        frame = self.animations[self.current_animation].get_frame()
+
+        if self.direction == "left":
+            frame = pygame.transform.flip(frame, True, False)
+
+        surface.blit(frame, (self.x, self.y))
 
     def handle_input(self, event, game_map, tile_rows, tile_cols):
+        if self.is_moving:
+            return False
+        
         moved = False
 
         new_gridx = self.gridx
@@ -29,8 +57,10 @@ class Player(GameObject):
 
             elif event.key in (pygame.K_LEFT, pygame.K_a):
                 new_gridx -= 1
+                self.direction = "left"
             elif event.key in (pygame.K_RIGHT, pygame.K_d):
                 new_gridx += 1
+                self.direction = "right"
 
         if new_gridx >= 0 and new_gridx < tile_cols and new_gridy >= 0 and new_gridy < tile_rows:
             
@@ -45,10 +75,26 @@ class Player(GameObject):
         return moved
         
     def update(self):
-        pass
+        targetx = self.gridx * self.tile_width
+        targety = self.gridy * self.tile_height
 
-        self.x = self.gridx * self.tile_width
-        self.y = self.gridy * self.tile_height
+        if self.x < targetx:
+            self.x = min(self.x + self.m_s, targetx)
+        elif self.x > targetx:
+            self.x = max(self.x - self.m_s, targetx)
 
+        if self.y < targety:
+            self.y = min(self.y + self.m_s, targety)
+        elif self.y > targety:
+            self.y = max(self.y - self.m_s, targety)
 
-   
+        if self.is_moving:
+            if self.current_animation != "walk":
+                self.current_animation = "walk"
+                self.animations["walk"].reset()
+            self.animations["walk"].tick()
+
+            if self.current_animation != "idle":
+                self.current_animation = "idle"
+                self.animations["idle"].reset()
+            self.animations["idle"].tick()
