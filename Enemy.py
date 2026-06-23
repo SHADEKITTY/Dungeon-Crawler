@@ -2,6 +2,7 @@ import os
 import pygame
 import random
 from go import *
+from Player import *
 from spritesheet import load_spritesheet, Animation
 
 Red = (255, 0, 0)
@@ -64,14 +65,24 @@ class Enemy(GameObject):
                 self.animation["idle"].tick()
 
 
-    def take_turn(self, game_map, tile_cols, tile_rows):
-        self._move_rand_adj(game_map, tile_cols, tile_rows)
+    def take_turn(self, game_map, tile_cols, tile_rows, old_player_x, old_player_y):
+        self._move_rand_adj(game_map, tile_cols, tile_rows, old_player_x, old_player_y)
+        
 
-    def _move_rand_adj(self, game_map, tile_cols, tile_rows):
+    def _move_rand_adj(self, game_map, tile_cols, tile_rows, old_player_x, old_player_y):
         directions = [(0, -1),
                       (0, 1),
                       (-1, 0),
                       (1, 0)]
+        
+        for dx, dy in directions:
+            new_gridx = self.gridx + dx
+            new_gridy = self.gridy + dy
+
+            if 0 <= new_gridx < tile_rows and 0 <= new_gridy < tile_cols:
+                if game_map[new_gridx][new_gridy] == 0 and new_gridx == old_player_x and new_gridy == old_player_y:
+                    self._move(game_map, new_gridx, new_gridy, dx, dy)
+                    return
         
         random.shuffle(directions)
 
@@ -81,17 +92,18 @@ class Enemy(GameObject):
 
             if 0 <= new_gridx < tile_rows and 0 <= new_gridy < tile_cols:
 
-                if game_map[new_gridx][new_gridy] == 0:
-
-                    game_map[new_gridx][new_gridy] = game_map[self.gridx][self.gridy]
-                    game_map[self.gridx][self.gridy] = 0
-                    
-                    if dx < 0:
-                        self.direction = "left"
-                    elif dx > 0:
-                        self.direction = "right"
-                    
-                    self.gridx = new_gridx
-                    self.gridy = new_gridy
+                if game_map[new_gridx][new_gridy] == 0 or isinstance(game_map[new_gridx][new_gridy], Player):
+                    self._move(game_map, new_gridx, new_gridy, dx, dy)
                     break
 
+    def _move(self, game_map, new_gridx, new_gridy, dx, dy):
+        game_map[new_gridx][new_gridy] = self
+        game_map[self.gridx][self.gridy] = 0
+
+        if dx < 0:
+            self.direction = "left"
+        elif dx > 0:
+            self.direction = "right"
+
+        self.gridx = new_gridx
+        self.gridy = new_gridy
